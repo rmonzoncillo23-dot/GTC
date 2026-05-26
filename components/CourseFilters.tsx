@@ -2,12 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { CourseCard } from "@/components/CourseCard";
-import { courses } from "@/data/site";
+import type { AdminCourse } from "@/lib/types";
 
 const modalities = ["Online", "Clases en vivo", "Corporativo", "Presencial", "On Demand"];
 
-export function CourseFilters() {
-  const categories = ["Todos", ...Array.from(new Set(courses.map((course) => course.category)))];
+type CourseFiltersProps = {
+  courses: AdminCourse[];
+};
+
+export function CourseFilters({ courses }: CourseFiltersProps) {
+  const categories = [
+    "Todos",
+    ...Array.from(
+      new Set(courses.map((course) => course.category).filter((category): category is string => Boolean(category)))
+    )
+  ];
   const [active, setActive] = useState("Todos");
 
   const filteredCourses = useMemo(
@@ -39,7 +48,7 @@ export function CourseFilters() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {filteredCourses.map((course) => (
-          <CourseCard key={course.title} {...course} />
+          <CourseCard key={course.id} {...course} />
         ))}
       </div>
     </div>

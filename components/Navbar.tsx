@@ -13,6 +13,8 @@ export function Navbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [dashboardHref, setDashboardHref] = useState("/dashboard");
+  const [dashboardLabel, setDashboardLabel] = useState("Dashboard");
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -20,10 +22,32 @@ export function Navbar() {
     }
 
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setIsLoggedIn(Boolean(data.user)));
+
+    async function loadSessionRole() {
+      const { data } = await supabase.auth.getUser();
+      setIsLoggedIn(Boolean(data.user));
+      setDashboardHref("/dashboard");
+      setDashboardLabel("Dashboard");
+
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+        if (profile?.role === "superadmin") {
+          setDashboardHref("/admin");
+          setDashboardLabel("Admin");
+        }
+      }
+    }
+
+    loadSessionRole();
     const {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      loadSessionRole();
       setIsLoggedIn(Boolean(session?.user));
       router.refresh();
     });
@@ -39,6 +63,8 @@ export function Navbar() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setIsLoggedIn(false);
+    setDashboardHref("/dashboard");
+    setDashboardLabel("Dashboard");
     router.push("/");
     router.refresh();
   }
@@ -73,8 +99,8 @@ export function Navbar() {
         <div className="hidden items-center gap-3 lg:flex">
           {isLoggedIn ? (
             <>
-              <Link href="/dashboard" className="rounded-full px-4 py-2 text-sm font-semibold text-corporate hover:bg-corporate/10">
-                Dashboard
+              <Link href={dashboardHref} className="rounded-full px-4 py-2 text-sm font-semibold text-corporate hover:bg-corporate/10">
+                {dashboardLabel}
               </Link>
               <button onClick={handleSignOut} className="focus-ring rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white transition hover:bg-corporate">
                 Salir
@@ -104,8 +130,8 @@ export function Navbar() {
                 {item.label}
               </Link>
             ))}
-            <Link href={isLoggedIn ? "/dashboard" : "/login"} onClick={() => setOpen(false)} className="rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white">
-              {isLoggedIn ? "Dashboard" : "Login"}
+            <Link href={isLoggedIn ? dashboardHref : "/login"} onClick={() => setOpen(false)} className="rounded-xl bg-navy px-4 py-3 text-sm font-semibold text-white">
+              {isLoggedIn ? dashboardLabel : "Login"}
             </Link>
           </div>
         </div>

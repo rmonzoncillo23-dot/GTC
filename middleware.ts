@@ -11,8 +11,12 @@ type CookieToSet = {
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
+  const isPrivateRoute =
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/admin");
+
   if (!isSupabaseConfigured()) {
-    if (request.nextUrl.pathname.startsWith("/dashboard")) {
+    if (isPrivateRoute) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("next", request.nextUrl.pathname);
@@ -45,16 +49,38 @@ export async function middleware(request: NextRequest) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (!user && isPrivateRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 
+  if (user && isPrivateRoute) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const role = profile?.role === "superadmin" ? "superadmin" : "alumno";
+
+    if (request.nextUrl.pathname.startsWith("/admin") && role !== "superadmin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    if (request.nextUrl.pathname.startsWith("/dashboard") && role === "superadmin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/((?!_next/static|_next/image|favicon.ico|images).*)"]
+  matcher: ["/dashboard/:path*", "/admin/:path*"]
 };

@@ -1,7 +1,10 @@
 import { CourseFilters } from "@/components/CourseFilters";
 import { SectionTitle } from "@/components/SectionTitle";
+import { getPublishedCourses } from "@/lib/courses/queries";
 
-export default function CoursesPage() {
+export default async function CoursesPage() {
+  const courses = await getPublishedCourses();
+
   return (
     <section className="container-page py-16">
       <SectionTitle
@@ -10,7 +13,7 @@ export default function CoursesPage() {
         description="Explora cursos listos para adaptar por categoria, modalidad y necesidad organizacional."
       />
       <div className="mt-12">
-        <CourseFilters />
+        <CourseFilters courses={courses} />
       </div>
     </section>
   );
