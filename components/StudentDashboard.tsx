@@ -1,18 +1,24 @@
-import { Award, Clock3, GraduationCap, Sparkles, UserCircle } from "lucide-react";
+import { AlertCircle, Award, Clock3, GraduationCap, UserCircle } from "lucide-react";
 import { CertificateCard } from "@/components/CertificateCard";
 import { CourseProgressCard } from "@/components/CourseProgressCard";
 import { UserCard } from "@/components/UserCard";
-import { mockCertificates, mockLearningCourses } from "@/data/platform";
-import type { Profile } from "@/lib/types";
+import type { Certificate, LearningCourse, Profile } from "@/lib/types";
 
 type StudentDashboardProps = {
   profile: Profile;
+  courses: LearningCourse[];
+  certificates: Certificate[];
+  error?: string | null;
 };
 
-export function StudentDashboard({ profile }: StudentDashboardProps) {
-  const activeCourses = mockLearningCourses.filter((course) => course.status === "activo");
-  const completedCourses = mockLearningCourses.filter((course) => course.status === "realizado");
-  const recommendedCourses = mockLearningCourses.filter((course) => course.status === "recomendado");
+const activeStatuses = ["inscrito", "en_progreso"];
+const completedStatuses = ["finalizado"];
+
+export function StudentDashboard({ profile, courses, certificates, error }: StudentDashboardProps) {
+  const activeCourses = courses.filter((course) => activeStatuses.includes(course.status));
+  const completedCourses = courses.filter((course) => completedStatuses.includes(course.status));
+  const availableCertificates = certificates.filter((certificate) => certificate.status === "disponible");
+  const completedHours = completedCourses.length;
 
   return (
     <div className="grid gap-8">
@@ -20,7 +26,7 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">Panel alumno</p>
         <h1 className="mt-3 text-3xl font-black sm:text-4xl">Bienvenido, {profile.full_name ?? "Alumno"}</h1>
         <p className="mt-3 max-w-3xl leading-7 text-white/78">
-          Revisa tus cursos activos, certificados, historial academico y proximas recomendaciones formativas.
+          Revisa tus cursos inscritos, avances, certificados e historial academico.
         </p>
         <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold text-white/82">
           <span className="rounded-full bg-white/12 px-4 py-2">{profile.email ?? "Correo no disponible"}</span>
@@ -28,31 +34,50 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
         </div>
       </div>
 
+      {error ? (
+        <div className="flex items-start gap-3 rounded-3xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-none" />
+          {error}
+        </div>
+      ) : null}
+
       <section id="mis-cursos" className="grid gap-4">
         <SectionHeader icon={GraduationCap} title="Mis cursos activos" />
-        <div className="grid gap-4 lg:grid-cols-2">
-          {activeCourses.map((course) => (
-            <CourseProgressCard key={course.id} course={course} />
-          ))}
-        </div>
+        {activeCourses.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {activeCourses.map((course) => (
+              <CourseProgressCard key={course.id} course={course} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="Aún no tienes cursos inscritos." />
+        )}
       </section>
 
       <section id="realizados" className="grid gap-4">
-        <SectionHeader icon={Clock3} title="Cursos realizados" />
-        <div className="grid gap-4 lg:grid-cols-2">
-          {completedCourses.map((course) => (
-            <CourseProgressCard key={course.id} course={course} />
-          ))}
-        </div>
+        <SectionHeader icon={Clock3} title="Cursos finalizados" />
+        {completedCourses.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {completedCourses.map((course) => (
+              <CourseProgressCard key={course.id} course={course} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="Aún no tienes cursos finalizados." />
+        )}
       </section>
 
       <section id="certificados" className="grid gap-4">
         <SectionHeader icon={Award} title="Certificados disponibles" />
-        <div className="grid gap-4 lg:grid-cols-2">
-          {mockCertificates.map((certificate) => (
-            <CertificateCard key={certificate.id} certificate={certificate} />
-          ))}
-        </div>
+        {availableCertificates.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {availableCertificates.map((certificate) => (
+              <CertificateCard key={certificate.id} certificate={certificate} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="Aún no tienes certificados disponibles." />
+        )}
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
@@ -64,23 +89,13 @@ export function StudentDashboard({ profile }: StudentDashboardProps) {
         <section id="historial" className="surface rounded-3xl p-6">
           <SectionHeader icon={Clock3} title="Historial academico" />
           <div className="mt-5 grid gap-4">
-            {["12 horas completadas", "2 cursos activos", "1 certificado disponible"].map((item) => (
-              <div key={item} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
-                {item}
-              </div>
-            ))}
+            <Metric text={`${courses.length} cursos inscritos`} />
+            <Metric text={`${activeCourses.length} cursos activos`} />
+            <Metric text={`${completedHours} cursos finalizados`} />
+            <Metric text={`${availableCertificates.length} certificados disponibles`} />
           </div>
         </section>
       </div>
-
-      <section className="grid gap-4">
-        <SectionHeader icon={Sparkles} title="Cursos recomendados" />
-        <div className="grid gap-4 lg:grid-cols-2">
-          {recommendedCourses.map((course) => (
-            <CourseProgressCard key={course.id} course={course} />
-          ))}
-        </div>
-      </section>
     </div>
   );
 }
@@ -97,6 +112,22 @@ function SectionHeader({ icon: Icon, title }: SectionHeaderProps) {
         <Icon className="h-5 w-5" />
       </div>
       <h2 className="text-2xl font-black text-navy">{title}</h2>
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="surface rounded-3xl p-8 text-center">
+      <p className="font-semibold text-slate-600">{text}</p>
+    </div>
+  );
+}
+
+function Metric({ text }: { text: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold text-slate-700">
+      {text}
     </div>
   );
 }

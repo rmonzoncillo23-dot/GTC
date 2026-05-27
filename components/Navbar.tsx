@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, X } from "lucide-react";
@@ -72,17 +73,23 @@ export function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/70 bg-white/88 backdrop-blur-xl">
       <nav className="container-page flex h-20 items-center justify-between">
-        <Link href="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-corporate to-skybrand text-base font-black text-white shadow-lg shadow-corporate/25">
-            GTC
-          </span>
-          <span>
-            <span className="block text-base font-black leading-5 text-navy">GTC Soluciones</span>
-            <span className="block text-xs font-medium text-slate-500">Gestion & Talento Confiable</span>
-          </span>
+        <Link
+          href="/"
+          className="relative block h-12 w-[168px] flex-none sm:h-14 sm:w-[210px] xl:w-[240px]"
+          aria-label="GTC Soluciones"
+          onClick={() => setOpen(false)}
+        >
+          <Image
+            src="/images/gtc-logo.png"
+            alt="GTC Soluciones - Gestion & Talento Confiable"
+            fill
+            priority
+            sizes="(max-width: 640px) 168px, (max-width: 1280px) 210px, 240px"
+            className="object-contain object-left"
+          />
         </Link>
 
-        <div className="hidden items-center gap-1 lg:flex">
+        <div className="hidden items-center gap-1 xl:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -96,7 +103,7 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden items-center gap-3 xl:flex">
           {isLoggedIn ? (
             <>
               <Link href={dashboardHref} className="rounded-full px-4 py-2 text-sm font-semibold text-corporate hover:bg-corporate/10">
@@ -116,14 +123,14 @@ export function Navbar() {
         <button
           aria-label="Abrir menu"
           onClick={() => setOpen((value) => !value)}
-          className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-navy lg:hidden"
+          className="focus-ring inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-navy xl:hidden"
         >
           {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </nav>
 
       {open ? (
-        <div className="border-t border-slate-100 bg-white lg:hidden">
+        <div className="border-t border-slate-100 bg-white xl:hidden">
           <div className="container-page flex flex-col gap-2 py-4">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">

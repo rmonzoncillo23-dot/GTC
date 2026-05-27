@@ -38,19 +38,40 @@ export function EnrollButton({ courseId }: EnrollButtonProps) {
       return;
     }
 
-    const { error } = await supabase.from("enrollments").upsert(
-      {
-        user_id: user.id,
-        course_id: courseId,
-        status: "active",
-        progress: 0
-      },
-      { onConflict: "user_id,course_id" }
-    );
+    const { data: existingEnrollment, error: lookupError } = await supabase
+      .from("enrollments")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("course_id", courseId)
+      .maybeSingle();
+
+    if (lookupError) {
+      setLoading(false);
+      setMessage({ type: "error", text: lookupError.message });
+      return;
+    }
+
+    if (existingEnrollment) {
+      setLoading(false);
+      setMessage({ type: "success", text: "Ya estás inscrito en este curso" });
+      return;
+    }
+
+    const { error } = await supabase.from("enrollments").insert({
+      user_id: user.id,
+      course_id: courseId,
+      status: "inscrito",
+      progress: 0
+    });
 
     setLoading(false);
 
     if (error) {
+      if (error.code === "23505") {
+        setMessage({ type: "success", text: "Ya estás inscrito en este curso" });
+        return;
+      }
+
       setMessage({ type: "error", text: error.message });
       return;
     }

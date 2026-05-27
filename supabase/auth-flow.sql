@@ -68,7 +68,7 @@ create table if not exists public.enrollments (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   course_id uuid not null references public.courses(id) on delete cascade,
-  status text not null default 'active',
+  status text not null default 'inscrito',
   progress integer not null default 0 check (progress >= 0 and progress <= 100),
   enrolled_at timestamptz not null default now(),
   completed_at timestamptz,

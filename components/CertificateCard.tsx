@@ -7,6 +7,7 @@ type CertificateCardProps = {
 
 export function CertificateCard({ certificate }: CertificateCardProps) {
   const isAvailable = certificate.status === "disponible";
+  const canDownload = isAvailable && Boolean(certificate.certificateUrl);
 
   return (
     <article className="surface rounded-3xl p-6">
@@ -20,13 +21,18 @@ export function CertificateCard({ certificate }: CertificateCardProps) {
       </div>
       <h3 className="mt-5 font-bold text-navy">{certificate.title}</h3>
       <p className="mt-2 text-sm text-slate-500">Emision: {certificate.issuedAt}</p>
-      <button
-        disabled={!isAvailable}
-        className="focus-ring mt-5 inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white transition hover:bg-corporate disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+      <a
+        href={canDownload ? certificate.certificateUrl! : undefined}
+        aria-disabled={!canDownload}
+        className={`focus-ring mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+          canDownload
+            ? "bg-navy text-white hover:bg-corporate"
+            : "pointer-events-none bg-slate-200 text-slate-500"
+        }`}
       >
         <Download className="h-4 w-4" />
         Descargar
-      </button>
+      </a>
     </article>
   );
 }

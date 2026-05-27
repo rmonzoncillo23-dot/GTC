@@ -13,11 +13,13 @@ export type Profile = {
 export type LearningCourse = {
   id: string;
   title: string;
-  category: string;
-  modality: string;
+  description?: string | null;
+  category: string | null;
+  modality: string | null;
   progress: number;
-  status: "activo" | "realizado" | "recomendado";
-  duration: string;
+  status: "activo" | "realizado" | "recomendado" | "inscrito" | "en_progreso" | "finalizado" | "completed";
+  duration: string | null;
+  image_url?: string | null;
 };
 
 export type Certificate = {
@@ -25,6 +27,7 @@ export type Certificate = {
   title: string;
   issuedAt: string;
   status: "disponible" | "pendiente";
+  certificateUrl?: string | null;
 };
 
 export type AdminCourse = {
