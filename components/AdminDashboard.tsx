@@ -111,7 +111,45 @@ export function AdminDashboard() {
     const supabase = createClient();
 
     try {
-      const [coursesData, usersResponse, profilesCount, coursesCount, enrollmentsCount, certificatesCount] =
+      const getDashboardStats = async () => {
+        const { data, error } = await supabase.rpc("get_admin_dashboard_stats");
+
+        if (!error && data) {
+          const row = Array.isArray(data) ? data[0] : data;
+
+          if (row) {
+            return {
+              users: Number(row.total_users ?? 0),
+              courses: Number(row.total_courses ?? 0),
+              enrollments: Number(row.total_enrollments ?? 0),
+              certificates: Number(row.total_certificates ?? 0)
+            };
+          }
+        }
+
+        const getExactCount = async (table: "profiles" | "courses" | "enrollments" | "certificates") => {
+          const { count, error: countError } = await supabase
+            .from(table)
+            .select("id", { count: "exact", head: true });
+
+          if (countError) {
+            throw new Error(`${table}: ${countError.message}`);
+          }
+
+          return count ?? 0;
+        };
+
+        const [users, courses, enrollments, certificates] = await Promise.all([
+          getExactCount("profiles"),
+          getExactCount("courses"),
+          getExactCount("enrollments"),
+          getExactCount("certificates")
+        ]);
+
+        return { users, courses, enrollments, certificates };
+      };
+
+      const [coursesData, usersResponse, dashboardStats] =
         await Promise.all([
           getCourses(true),
           supabase
@@ -119,27 +157,18 @@ export function AdminDashboard() {
             .select("id, full_name, email, role, company, phone, created_at")
             .order("created_at", { ascending: false })
             .limit(5),
-          supabase.from("profiles").select("id", { count: "exact", head: true }),
-          supabase.from("courses").select("id", { count: "exact", head: true }),
-          supabase.from("enrollments").select("id", { count: "exact", head: true }),
-          supabase
-            .from("certificates")
-            .select("id", { count: "exact", head: true })
-            .neq("status", "pending")
+          getDashboardStats()
         ]);
 
       setCourses(coursesData);
 
-      if (!usersResponse.error) {
-        setUsers((usersResponse.data ?? []) as Profile[]);
+      if (usersResponse.error) {
+        throw new Error(`profiles: ${usersResponse.error.message}`);
       }
 
-      setStats({
-        users: profilesCount.count ?? 0,
-        courses: coursesCount.count ?? 0,
-        enrollments: enrollmentsCount.count ?? 0,
-        certificates: certificatesCount.count ?? 0
-      });
+      setUsers((usersResponse.data ?? []) as Profile[]);
+
+      setStats(dashboardStats);
     } catch (error) {
       const text = error instanceof Error ? error.message : "No se pudo cargar el panel admin.";
       setMessage(text);

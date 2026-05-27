@@ -157,6 +157,32 @@ as $$
   );
 $$;
 
+create or replace function public.get_admin_dashboard_stats()
+returns table (
+  total_users bigint,
+  total_courses bigint,
+  total_enrollments bigint,
+  total_certificates bigint
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_superadmin() then
+    raise exception 'Only superadmin users can read admin dashboard stats';
+  end if;
+
+  return query
+  select
+    (select count(*) from public.profiles) as total_users,
+    (select count(*) from public.courses) as total_courses,
+    (select count(*) from public.enrollments) as total_enrollments,
+    (select count(*) from public.certificates) as total_certificates;
+end;
+$$;
+
 drop policy if exists "profiles_select_own_or_admin" on public.profiles;
 create policy "profiles_select_own_or_admin"
   on public.profiles for select

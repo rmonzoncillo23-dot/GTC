@@ -39,17 +39,26 @@ export function LoginForm() {
 
   async function redirectByRole(userId: string) {
     const supabase = createClient();
-    const { data: profile } = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", userId)
       .maybeSingle();
 
+    if (error) {
+      throw new Error(error.message);
+    }
+
     const role = profile?.role === "superadmin" ? "superadmin" : "alumno";
     const destination = role === "superadmin" ? "/admin" : "/dashboard";
     const requestedPath = searchParams.get("next");
+    const nextPath =
+      requestedPath && ["/admin", "/dashboard"].includes(requestedPath)
+        ? requestedPath
+        : destination;
 
-    router.push(requestedPath === destination ? requestedPath : destination);
+    setLoading(false);
+    router.replace(nextPath);
     router.refresh();
   }
 
@@ -117,7 +126,17 @@ export function LoginForm() {
         return;
       }
 
-      await redirectByRole(data.user.id);
+      try {
+        await redirectByRole(data.user.id);
+      } catch (redirectError) {
+        setLoading(false);
+        showMessage(
+          "error",
+          redirectError instanceof Error
+            ? redirectError.message
+            : "No pudimos completar la redireccion."
+        );
+      }
       return;
     }
 
@@ -129,7 +148,28 @@ export function LoginForm() {
       return;
     }
 
-    await redirectByRole(data.user.id);
+    const {
+      data: { session },
+      error: sessionError
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      setLoading(false);
+      showMessage("error", "La sesion no quedo activa. Intenta iniciar sesion nuevamente.");
+      return;
+    }
+
+    try {
+      await redirectByRole(data.user.id);
+    } catch (redirectError) {
+      setLoading(false);
+      showMessage(
+        "error",
+        redirectError instanceof Error
+          ? redirectError.message
+          : "No pudimos completar la redireccion."
+      );
+    }
   }
 
   return (
@@ -274,7 +314,7 @@ export function LoginForm() {
             }}
             className="text-center text-sm font-bold text-corporate transition hover:text-navy disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Olvide mi contraseña
+            Olvidé mi contraseña
           </button>
         ) : (
           <button
